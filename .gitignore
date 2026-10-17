@@ -1,0 +1,11 @@
+# 密钥与本地状态：绝不入库
+data/vault.json
+data/catalog.json
+*.log
+test/server.log
+test/server.err
+
+# 系统
+.DS_Store
+Thumbs.db
+node_modules/

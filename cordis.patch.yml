@@ -1,0 +1,10 @@
+# dsh-free-api-pool bundle layer.
+#
+# Loads the host half (lib/index.js) which owns /dsh-free-pool/* routes; because
+# package.json declares `dsh.client`, the web app also loads lib/client.js and
+# mounts the 白嫖池 button at `conversation.input.left`.
+- insert:
+    - id: dsh-free-api-pool
+      name: dsh-free-api-pool
+      config:
+        credentialsFile: 'C:\Users\35238\Documents\夸克密码.csv'

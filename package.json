@@ -1,0 +1,48 @@
+{
+  "name": "dsh-free-api-pool",
+  "version": "0.1.0",
+  "private": true,
+  "description": "白嫖池：把各大平台长期可白嫖的免费 API 额度集中显示在对话框输入框左侧的按钮里，标注剩余总量 / 今日剩余 / 已用，并支持中转站一键签到。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "data",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ],
+      "platform": "web"
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "plugin",
+    "free-api",
+    "quota"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.18.1"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  }
+}
