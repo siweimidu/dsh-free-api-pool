@@ -1,7 +1,7 @@
 /**
  * Renders the real client.js in a browser against a stubbed host, so the panel can be
  * inspected visually and driven without booting DSH. Serves the plugin's own file plus a
- * fixture host that mirrors the real route payloads.
+ * fixture host that mirrors the real route payloads (including multi-key accounts).
  */
 import http from 'node:http'
 import { readFileSync } from 'node:fs'
@@ -10,69 +10,101 @@ const PLUGIN = 'C:/Users/35238/.dsh/profiles/desktop/dsh-free-api-pool'
 const REACT = 'C:/Users/35238/.dsh/profiles/node_modules/react/umd/react.development.js'
 const REACT_DOM = 'C:/Users/35238/.dsh/profiles/node_modules/react-dom/umd/react-dom.development.js'
 
-// ── fixture host: real payload shapes captured from lib/index.js ───────────
 const PROVIDERS = JSON.parse(readFileSync(PLUGIN + '/data/providers.json', 'utf8')).providers
 
-const QUOTA = {
-  at: Date.now(),
-  providers: PROVIDERS.map((p) => {
-    let quota
-    if (p.slug === 'groq') {
-      quota = { state: 'ok', nature: 'rate-limit', currency: 'requests', todayCurrency: 'requests', totalRemaining: 999, todayRemaining: 999, used: 1, todayUsed: null, models: 11, detail: '免费层实测：每分钟 1000 次请求，剩余 999 次（每次调用刷新）', windows: [{ label: '每分钟请求', unit: 'requests', limit: 1000, remaining: 999, used: 1, reset: '1m26.4s' }, { label: '每分钟 token', unit: 'tokens', limit: 8000, remaining: 7923, used: 77, reset: '577ms' }] }
-    } else if (p.slug === 'openrouter') {
-      quota = { state: 'ok', nature: 'balance', currency: 'USD', todayCurrency: 'models', totalRemaining: null, todayRemaining: 19, used: 0.2022, todayUsed: null, models: 19, detail: '免费层账号，当前 19 个模型免费，无付费余额（免费层）', windows: [] }
-    } else if (p.slug === 'moonshot') {
-      quota = { state: 'ok', nature: 'balance', currency: 'CNY', todayCurrency: null, totalRemaining: 3.37, todayRemaining: null, used: null, todayUsed: null, models: null, detail: '代金券 3.3670201 / 现金 0', windows: [] }
-    } else if (p.slug === 'github') {
-      quota = { state: 'ok', nature: 'rate-limit', currency: 'requests', todayCurrency: 'requests', totalRemaining: 4990, todayRemaining: 4990, used: 10, todayUsed: null, models: null, detail: 'GitHub API 速率额度（非模型额度），于 00:33:34 重置', windows: [] }
-    } else if (p.slug === 'hcnsec') {
-      quota = { state: 'error', nature: 'none', currency: null, todayCurrency: null, totalRemaining: null, todayRemaining: null, used: null, todayUsed: null, models: null, detail: 'Key 被拒绝（HTTP 401）', windows: [] }
-    } else if (p.probe === 'static') {
-      quota = { state: 'console', nature: 'console', currency: null, todayCurrency: null, totalRemaining: null, todayRemaining: null, used: null, todayUsed: null, models: null, detail: (p.freeNote || '免费额度') + '，该平台未开放余额接口，需在控制台查看', windows: [] }
-    } else {
-      quota = { state: 'nokey', nature: 'none', currency: null, todayCurrency: null, totalRemaining: null, todayRemaining: null, used: null, todayUsed: null, models: null, detail: '尚未添加 Key，添加后可自动查询', windows: [] }
+function quotaFor(slug, accountIndex) {
+  const bump = accountIndex * 137
+  if (slug === 'groq') {
+    return { state: 'ok', nature: 'rate-limit', currency: 'requests', todayCurrency: 'requests', totalRemaining: 999 - bump, todayRemaining: 999 - bump, used: 1 + accountIndex, todayUsed: null, models: 11, detail: '免费层实测：每分钟 1000 次请求', windows: [{ label: '每分钟请求', unit: 'requests', limit: 1000, remaining: 999 - bump, used: 1, reset: '1m26.4s' }, { label: '每分钟 token', unit: 'tokens', limit: 8000, remaining: 7923 - bump, used: 77, reset: '577ms' }] }
+  }
+  if (slug === 'openrouter') {
+    return { state: 'ok', nature: 'balance', currency: 'USD', todayCurrency: 'models', totalRemaining: 12.5 - accountIndex * 2, todayRemaining: 19, used: 0.2 + accountIndex, todayUsed: null, models: 19, detail: '免费层账号，当前 19 个模型免费', windows: [] }
+  }
+  if (slug === 'moonshot') {
+    return { state: 'ok', nature: 'balance', currency: 'CNY', todayCurrency: null, totalRemaining: 3.37 + accountIndex, todayRemaining: null, used: null, todayUsed: null, models: null, detail: '代金券 3.3670201 / 现金 0', windows: [] }
+  }
+  if (slug === 'github') {
+    return { state: 'ok', nature: 'rate-limit', currency: 'requests', todayCurrency: 'requests', totalRemaining: 4990, todayRemaining: 4990, used: 10, todayUsed: null, models: null, detail: 'GitHub API 速率额度（非模型额度）', windows: [] }
+  }
+  if (slug === 'hcnsec') {
+    return { state: 'error', nature: 'none', currency: null, todayCurrency: null, totalRemaining: null, todayRemaining: null, used: null, todayUsed: null, models: null, detail: 'Key 被拒绝（HTTP 401）', windows: [] }
+  }
+  return { state: 'console', nature: 'console', currency: null, todayCurrency: null, totalRemaining: null, todayRemaining: null, used: null, todayUsed: null, models: null, detail: '该平台未开放余额接口，需在控制台查看', windows: [] }
+}
+
+// Multi-key fixtures: Groq x3, OpenRouter x2, Moonshot x1.
+const KEY_PLAN = { groq: 3, openrouter: 2, moonshot: 1, github: 1, hcnsec: 1 }
+let entries = []
+for (const [slug, count] of Object.entries(KEY_PLAN)) {
+  for (let i = 0; i < count; i += 1) {
+    entries.push({
+      id: slug + '-' + i,
+      slug,
+      label: count > 1 ? slug + ' 账号 ' + (i + 1) : slug + ' 主号',
+      masked: 'sk-' + slug.slice(0, 3) + '…' + String(1000 + i),
+      baseUrl: (PROVIDERS.find((p) => p.slug === slug) || {}).baseUrl || '',
+    })
+  }
+}
+
+function buildProviders() {
+  return PROVIDERS.map((p) => {
+    const mine = entries.filter((e) => e.slug === p.slug)
+    const accounts = mine.map((e, i) => ({ ...e, quota: quotaFor(p.slug, i) }))
+    const measured = accounts.filter((a) => a.quota.state === 'ok')
+    const sum = (f) => {
+      const vals = measured.map((a) => a.quota[f]).filter((v) => typeof v === 'number')
+      return vals.length === 0 ? null : vals.reduce((a, b) => a + b, 0)
     }
-    const keyed = ['groq', 'openrouter', 'moonshot', 'github'].includes(p.slug)
     return {
       slug: p.slug, name: p.name, vendor: p.vendor, category: p.category,
       baseUrl: p.baseUrl, applyUrl: p.applyUrl, docsUrl: p.docsUrl,
       freeKind: p.freeKind, freeNote: p.freeNote, probe: p.probe,
       checkin: p.checkin === true || p.checkin === 'sharedchat',
-      keyCount: keyed ? 1 : 0,
-      keyLabels: keyed ? [p.name + ' 主号'] : [],
+      keyCount: mine.length,
+      keys: mine,
+      accounts,
       hasCredential: ['agentrouter', 'hcnsec', 'sharedchat'].includes(p.slug),
-      quota,
+      quota: {
+        state: measured.length > 0 ? 'ok' : (mine.length > 0 ? 'error' : (p.probe === 'static' ? 'console' : 'nokey')),
+        nature: measured.length > 0 ? measured[0].quota.nature : 'console',
+        currency: measured.length > 0 ? measured[0].quota.currency : null,
+        todayCurrency: measured.length > 0 ? measured[0].quota.todayCurrency : null,
+        totalRemaining: sum('totalRemaining'),
+        todayRemaining: sum('todayRemaining'),
+        used: sum('used'),
+        todayUsed: sum('todayUsed'),
+        models: measured.length > 0 ? measured[0].quota.models : null,
+        detail: mine.length > 1 ? mine.length + ' 个账号合计' : (measured[0] ? measured[0].quota.detail : '尚未添加 Key'),
+        windows: measured.length > 0 ? measured[0].quota.windows : [],
+      },
     }
-  }),
+  })
 }
 
 const FREE = {
   at: Date.now(),
-  openrouter: {
-    ok: true, total: 470, models: [
-      { id: 'xingchen-agi/xing4.0-29b-a4b:free', name: 'XingChen 4.0', context: 262144, freeKind: 'long-term', note: '' },
-      { id: 'deepseek/deepseek-v4.1-flash:free', name: 'DeepSeek V4.1 Flash', context: 163840, freeKind: 'long-term', note: '' },
-      { id: 'google/gemma-4-31b-it:free', name: 'Gemma 4 31B', context: 131072, freeKind: 'long-term', note: '' },
-      { id: 'liquid/lfm-2.5-2.6b:free', name: 'LFM 2.5', context: 32768, freeKind: 'long-term', note: '' },
-    ],
-  },
-  opencode: {
-    ok: true, total: 85, models: [
-      { id: 'big-pickle', name: 'big-pickle', context: null, freeKind: 'daily', note: '' },
-      { id: 'beam-free', name: 'beam-free', context: null, freeKind: 'daily', note: '' },
-      { id: 'mimo-v2.6-flash-free', name: 'mimo-v2.6-flash-free', context: null, freeKind: 'daily', note: '' },
-      { id: 'deepseek-v4.1-flash-free', name: 'deepseek-v4.1-flash-free', context: null, freeKind: 'daily', note: '' },
-    ],
-  },
+  openrouter: { ok: true, total: 470, models: [
+    { id: 'xingchen-agi/xing4.0-29b-a4b:free', name: 'XingChen 4.0', context: 262144, freeKind: 'long-term', note: '' },
+    { id: 'deepseek/deepseek-v4.1-flash:free', name: 'DeepSeek V4.1 Flash', context: 163840, freeKind: 'long-term', note: '' },
+  ] },
+  opencode: { ok: true, total: 85, models: [
+    { id: 'big-pickle', name: 'big-pickle', context: null, freeKind: 'daily', note: '' },
+    { id: 'deepseek-v4.1-flash-free', name: 'deepseek-v4.1-flash-free', context: null, freeKind: 'daily', note: '' },
+  ] },
 }
-
-const KEYED = PROVIDERS.filter((p) => ['groq', 'openrouter', 'moonshot', 'github'].includes(p.slug))
-  .map((p, i) => ({ id: 'k' + i, slug: p.slug, label: p.name + ' 主号', masked: 'sk-ab…cd12', baseUrl: p.baseUrl }))
-let providersState = QUOTA.providers.map((p) => ({ ...p, keys: KEYED.filter((k) => k.slug === p.slug) }))
 
 function send(res, status, payload) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' })
   res.end(JSON.stringify(payload))
+}
+
+function readBody(req) {
+  return new Promise((resolve) => {
+    let b = ''
+    req.on('data', (c) => (b += c))
+    req.on('end', () => resolve(b || '{}'))
+  })
 }
 
 const server = http.createServer(async (req, res) => {
@@ -86,8 +118,11 @@ const server = http.createServer(async (req, res) => {
   if (p === '/react.js') { res.writeHead(200, { 'content-type': 'text/javascript' }); res.end(readFileSync(REACT)); return }
   if (p === '/react-dom.js') { res.writeHead(200, { 'content-type': 'text/javascript' }); res.end(readFileSync(REACT_DOM)); return }
   if (p === '/client.js') { res.writeHead(200, { 'content-type': 'text/javascript' }); res.end(readFileSync(PLUGIN + '/lib/client.js')); return }
-  if (p === '/dsh-free-pool/providers') return send(res, 200, { total: providersState.length, providers: providersState })
-  if (p === '/dsh-free-pool/quota') return send(res, 200, { at: Date.now(), providers: providersState })
+  if (p === '/dsh-free-pool/providers') {
+    const providers = buildProviders()
+    return send(res, 200, { total: providers.length, providers })
+  }
+  if (p === '/dsh-free-pool/quota') return send(res, 200, { at: Date.now(), providers: buildProviders() })
   if (p === '/dsh-free-pool/free-models') return send(res, 200, FREE)
   if (p === '/dsh-free-pool/models') {
     const body = JSON.parse(await readBody(req))
@@ -96,44 +131,45 @@ const server = http.createServer(async (req, res) => {
   }
   if (p === '/dsh-free-pool/vault/add') {
     const body = JSON.parse(await readBody(req))
-    const id = 'k' + Math.random().toString(36).slice(2, 8)
-    providersState = providersState.map((x) => x.slug === body.slug
-      ? { ...x, keyCount: x.keyCount + 1, keys: [...(x.keys || []), { id, slug: body.slug, label: body.label || x.name, masked: 'sk-ab…cd12', baseUrl: body.baseUrl }] }
-      : x)
-    return send(res, 200, { ok: true, id, masked: 'sk-ab…cd12' })
+    const slug = body.slug || 'custom'
+    const id = 'n-' + Math.random().toString(36).slice(2, 8)
+    entries.push({ id, slug, label: body.label || slug, masked: 'sk-new…0000', baseUrl: body.baseUrl })
+    return send(res, 200, { ok: true, id, masked: 'sk-new…0000' })
   }
   if (p === '/dsh-free-pool/vault/remove') {
     const body = JSON.parse(await readBody(req))
-    providersState = providersState.map((x) => ({
-      ...x,
-      keys: (x.keys || []).filter((k) => k.id !== body.id),
-      keyCount: (x.keys || []).filter((k) => k.id !== body.id).length,
-    }))
+    entries = entries.filter((e) => e.id !== body.id)
     return send(res, 200, { ok: true })
   }
-  if (p === '/dsh-free-pool/vault/export') return send(res, 200, { schema: 'dsh-free-api-pool/vault-export/v1', exportedAt: new Date().toISOString(), count: 4, entries: KEYED.map((k) => ({ ...k, key: 'sk-real-key-value' })) })
+  if (p === '/dsh-free-pool/vault/export') {
+    return send(res, 200, {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      source: 'freellmapi',
+      count: entries.length,
+      keys: entries.map((e) => ({ platform: e.slug, key: 'sk-real…value', label: e.label, baseUrl: e.baseUrl })),
+    })
+  }
+  if (p === '/dsh-free-pool/vault/import') {
+    const body = JSON.parse(await readBody(req))
+    const keys = (body.data && body.data.keys) || body.keys || []
+    return send(res, 200, { ok: true, added: keys.length, skipped: 0, errors: [], total: entries.length + keys.length })
+  }
   if (p === '/dsh-free-pool/speed-test') {
     const body = JSON.parse(await readBody(req))
     const id = String(body.entryId || '')
-    if (id === 'k0') {
+    if (id.startsWith('groq')) {
       return send(res, 200, { ok: true, status: 200, model: 'openai/gpt-oss-120b', baseUrl: 'https://api.groq.com/openai/v1', ttftMs: 268, totalMs: 764, tokens: 18, tokensSource: 'usage', chars: 73, tps: 36.3, grade: 'excellent' })
     }
-    if (id === 'k1') {
+    if (id.startsWith('openrouter')) {
       return send(res, 200, { ok: true, status: 200, model: 'xingchen-agi/xing4.0-29b-a4b:free', baseUrl: 'https://openrouter.ai/api/v1', ttftMs: 4101, totalMs: 4342, tokens: 64, tokensSource: 'usage', chars: 238, tps: 265.6, grade: 'slow' })
     }
     return send(res, 200, { ok: false, status: 429, model: 'google/gemma-4-31b-it:free', baseUrl: 'https://openrouter.ai/api/v1', error: 'Provider returned error', ttftMs: null, totalMs: 3324 })
   }
   if (p === '/dsh-free-pool/checkin') return send(res, 200, { ok: true, message: '签到成功，获得 $5' })
-  if (p === '/dsh-free-pool/checkin-all') return send(res, 200, { results: [{ slug: 'sharedchat', name: 'sharedchat', ok: true, message: '当前套餐仍在有效期内，到期后可以再次领取' }, { slug: 'hcnsec', name: '新疆幻城', ok: false, message: '该站登录需要 Cloudflare 人机验证，无法自动签到' }] })
+  if (p === '/dsh-free-pool/checkin-all') return send(res, 200, { results: [{ slug: 'sharedchat', name: 'sharedchat', ok: true, message: '当前套餐仍在有效期内' }] })
   send(res, 404, { error: 'not found' })
 })
 
-function readBody(req) {
-  return new Promise((resolve) => {
-    let b = ''
-    req.on('data', (c) => (b += c))
-    req.on('end', () => resolve(b || '{}'))
-  })
-}
-
-server.listen(8791, '127.0.0.1', () => console.log('harness on http://127.0.0.1:8791'))
+const port = Number(process.env.PORT || 8791)
+server.listen(port, '127.0.0.1', () => console.log('harness on http://127.0.0.1:' + port))

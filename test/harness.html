@@ -13,10 +13,22 @@
     --dsw-alias-label-secondary: #5b6470;
     --dsw-alias-border-l1: #e7eaef;
   }
+  /* ?theme=dark swaps the same tokens, which is exactly what the real app does. */
+  html.dark {
+    --dsw-alias-bg-layer-1: #0e1115;
+    --dsw-alias-bg-layer-2: #161a20;
+    --dsw-alias-bg-overlay: #161a20;
+    --dsw-alias-label-primary: #eff1f4;
+    --dsw-alias-label-secondary: #a8b3c2;
+    --dsw-alias-border-l1: #333942;
+  }
   html, body { margin: 0; height: 100%; background: #f5f6f8; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  html.dark body { background: #0a0d12; }
   #composer { position: fixed; left: 24px; bottom: 24px; display: flex; align-items: center; gap: 12px;
     padding: 10px 14px; background: #fff; border: 1px solid #e7eaef; border-radius: 16px; }
+  html.dark #composer { background: #161a20; border-color: #333942; }
   #composer .fake-model { font-size: 12px; color: #5b6470; border: 1px solid #e7eaef; border-radius: 12px; padding: 4px 10px; }
+  html.dark #composer .fake-model { color: #a8b3c2; border-color: #333942; }
 </style>
 </head>
 <body>
@@ -33,6 +45,9 @@
     const React = window.React
     const ReactDOM = window.ReactDOM
     const modules = {}
+
+    const params = new URLSearchParams(location.search)
+    if (params.get('theme') === 'dark') document.documentElement.classList.add('dark')
 
     window.__ModuleLoader__ = {
       load(def) {
@@ -74,8 +89,14 @@
       // without a native select interaction (Playwright's selectOption is not exposed here).
       const demo = new URLSearchParams(location.search).get('demo')
 
-      // ?demo=speed opens the 密钥 tab and runs both speed tests, so the metric strip can
-      // be screenshotted without clicking.
+      if (demo === 'expand') {
+        setTimeout(() => {
+          const btns = [...document.querySelectorAll('.dfp-expand')]
+          if (btns[0]) btns[0].click()
+        }, 600)
+      }
+
+      // ?demo=speed opens the 密钥 tab and runs both speed tests.
       if (demo === 'speed') {
         setTimeout(() => {
           const tab = [...document.querySelectorAll('.dfp-tab')].find((el) => el.textContent.includes('密钥'))

@@ -8,6 +8,15 @@ DeepSeek Harness 插件：把各大平台**长期可白嫖的免费 API 额度**
 
 ## 功能
 
+### 0. 一个平台，多个 Key
+
+同一厂商可以加任意多个 Key（例如 Groq 主号 + 小号 + 小号2）：
+
+- **收起** 显示所有账号的**合计额度**（`剩余总量（合计）`）
+- **展开**（点卡片左侧箭头）逐条显示每个账号的剩余、已用、速率窗口，可单独测速 / 删除
+
+导入的第三方中转站会按 Base URL 各自成卡片，同名不同站不会混在一起；同一站点的多个 Key 会正确合并。
+
 ### 1. 免费额度池 —— 真实数字，不猜
 
 每个平台一行，显示 `剩余总量 / 今日剩余 / 已用 / 今日已用`。**只有平台真的提供了数字才显示**，没有余额接口的平台明确写「需控制台」，不会编造一个余额。
@@ -27,10 +36,31 @@ DeepSeek Harness 插件：把各大平台**长期可白嫖的免费 API 额度**
 
 ### 3. 密钥管理 —— 填 Key 自动读模型 ID
 
-- 选平台 → **Base URL 自动填好**（28 家大厂已内置）→ 填 Key → 点「读取模型 ID」，插件真的去请求该平台的 `/models` 接口，把模型 ID 列表拉回来
+- 选平台 → **Base URL 自动填好**（39 家大厂已内置）→ 填 Key → 点「读取模型 ID」，插件真的去请求该平台的 `/models` 接口，把模型 ID 列表拉回来
 - 保存后只显示掩码（`gsk_RE…0dUP`），Key 存在本机 `data/vault.json`
-- 支持**删除**单条、**导出全部**为 JSON 文件
-- 自定义平台也能用：不选平台，直接填 Base URL + Key 即可
+- 支持**删除**单条、**导入 / 导出**
+- 自定义平台也能用：平台选「自定义」，填 Base URL + Key 即可
+
+### 3.2 导入 / 导出 —— 兼容 FreeLLMAPI
+
+导出格式与 [FreeLLMAPI](https://github.com/) 的 vault 完全一致，两边可以互相导：
+
+```json
+{
+  "version": 1,
+  "exportedAt": "2026-10-18T00:00:00.000Z",
+  "source": "freellmapi",
+  "keys": [
+    { "platform": "groq", "key": "gsk_...", "label": "主号", "baseUrl": "https://api.groq.com/openai/v1" },
+    { "platform": "custom", "key": "sk-...", "label": "我的中转站", "baseUrl": "https://relay.example.com/v1" }
+  ]
+}
+```
+
+- **导出**：`platform`（厂商 ID 或 `custom`）+ `key` + `label`（你的备注名）+ `baseUrl`，一个不少
+- **导入**：直接吃 FreeLLMAPI 导出的文件。认识的厂商映射到内置目录，不认识的按 `custom` + 它自带的 `baseUrl` 建卡
+- 重复 Key 自动跳过（实测导入 166 条 → 新增 159、跳过 7 条缺 baseUrl 的自定义条目）
+- 导出再导回完全无损（159 → 159）
 
 ### 3.5 Token 测速 —— 实测首字延迟与吞吐
 
@@ -53,7 +83,7 @@ DeepSeek Harness 插件：把各大平台**长期可白嫖的免费 API 额度**
 
 ### 4. 平台目录 —— 一键去申请
 
-28 家平台，每家带**官方密钥申请页**（全部实测 HTTP 200 可访问），点「申请」在新标签打开。按「长期免费 / 每日刷新 / 新用户赠额」筛选。
+39 家平台，每家带**官方密钥申请页**（全部实测 HTTP 200 可访问），点「申请」在新标签打开。按「长期免费 / 每日刷新 / 新用户赠额」筛选。
 
 ### 5. 一键签到
 
@@ -160,7 +190,7 @@ dsh-free-api-pool/
 ├── cordis.patch.yml       # bundle 层
 ├── package.json           # dsh.client 声明 → 浏览器半自动加载
 ├── data/
-│   ├── providers.json     # 28 家平台目录（Base URL / 申请页 / 免费类型）
+│   ├── providers.json     # 39 家平台目录（Base URL / 申请页 / 免费类型）
 │   └── vault.json         # 你的密钥（gitignored）
 ├── lib/
 │   ├── index.js           # 主机半：路由、额度探测、模型发现、签到
