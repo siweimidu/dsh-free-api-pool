@@ -122,6 +122,15 @@ const server = http.createServer(async (req, res) => {
     const providers = buildProviders()
     return send(res, 200, { total: providers.length, providers })
   }
+  if (p === '/dsh-free-pool/v1/route') {
+    return send(res, 200, {
+      profile: url.searchParams.get('profile') || 'auto',
+      picked: { provider: 'openrouter', model: 'deepseek/deepseek-v4.1-flash-1017', baseUrl: 'https://openrouter.ai/api/v1' },
+      reason: 'OpenRouter · deepseek/deepseek-v4.1-flash-1017',
+      tried: [],
+      profiles: ['auto', 'auto-fast', 'auto-cheap', 'auto-code', 'auto-write'].map((id) => ({ id, name: id, hint: '' })),
+    })
+  }
   if (p === '/dsh-free-pool/quota') return send(res, 200, { at: Date.now(), probed: false, providers: buildProviders() })
   if (p === '/dsh-free-pool/quota/probe') {
     const body = JSON.parse(await readBody(req))

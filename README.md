@@ -223,6 +223,64 @@ DeepSeek Harness 插件：把各大平台**长期可白嫖的免费 API 额度**
 
 ## 配置
 
+### Auto 的选法
+
+每个 profile 有**自己的厂商偏好顺序**和**自己的评分函数**，两者都写在
+`lib/index.js` 的 `AUTO_MODELS` / `PROFILE_PREFERENCE` 里，可以直接改。
+
+| Profile | 偏好顺序 | 打分依据 |
+| --- | --- | --- |
+| **Auto** | OpenRouter → Google → Groq → Mistral → Cerebras → … | 厂商等级 × 20 + 模型规模，取最高 |
+| **Auto-Fast** | Groq → Cerebras → Google → OpenRouter → … | 厂商延迟等级 × 100；小于 20B 的模型直接扣 200 分 |
+| **Auto-Cheap** | Google → Groq → OpenRouter → … | 真免模型 +1000，长期免费 +200，再看厂商等级 |
+| **Auto-Code** | OpenRouter → Google → Groq → … | 命中代码模型系列 +1000（deepseek/qwen/coder/claude/glm…） |
+| **Auto-Write** | Google → OpenRouter → Mistral → … | 长上下文 +500，写作向模型 +400 |
+
+延迟等级是按实测行为定的，不是厂商宣传：
+
+- **3** = 自建推理硬件（Groq LPU、Cerebras WSE）
+- **2** = 有专属端点的一线云（Google、OpenRouter、Mistral）
+- **1** = 聚合转发
+- **0** = 以排队著称的（NVIDIA NIM、Ollama、HuggingFace）
+
+**失败会自动换下一个**：402（没额度）、429（限流）、5xx、以及「HTTP 200 但 body 里是 error」
+（OpenRouter 免费模型过载时就返回这个）都会跳下一个候选，最多试 12 个。响应头
+`x-dfp-route` 会写明最终用了谁，`x-dfp-fallbacks` 是跳过了几个。
+
+调试：`POST /dsh-free-pool/v1/route?profile=auto-fast` 返回当前会选谁、以及被跳过的厂商。
+
+### Auto 网关（可选，推荐）
+
+插件自带一个 OpenAI 兼容端点 `http://127.0.0.1:51373/dsh-free-pool/v1`，装好后在
+`cordis.patch.yml` 里加一个 provider 即可让 Auto 出现在模型列表：
+
+```yaml
+      dfp-auto:
+        displayName: 免费池 Auto
+        apiKeyEnv: DFP_POOL_KEY
+        api: openai-completions
+        baseURL: http://127.0.0.1:51373/dsh-free-pool/v1
+        models:
+          - id: auto
+            name: Auto（自动选择）
+          - id: auto-fast
+            name: Auto-Fast（最快）
+          - id: auto-cheap
+            name: Auto-Cheap（最省额度）
+          - id: auto-code
+            name: Auto-Code（写代码）
+          - id: auto-write
+            name: Auto-Write（写文章）
+```
+
+并在 `~/.dsh/.credentials.yaml` 里放一行占位（网关不校验 Key）：
+
+```yaml
+DFP_POOL_KEY: local-gateway
+```
+
+> 端口要和 DSH 的 Web GUI 端口一致。查看方式：设置里的 Web GUI 地址，或 `127.0.0.1:51373`。
+
 `cordis.patch.yml`：
 
 ```yaml
