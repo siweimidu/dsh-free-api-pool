@@ -66,7 +66,7 @@ function buildProviders() {
       accounts,
       hasCredential: ['agentrouter', 'hcnsec', 'sharedchat'].includes(p.slug),
       quota: {
-        state: measured.length > 0 ? 'ok' : (mine.length > 0 ? 'error' : (p.probe === 'static' ? 'console' : 'nokey')),
+        state: measured.length > 0 ? 'ok' : (mine.length > 0 ? 'untested' : (p.probe === 'static' ? 'console' : 'nokey')),
         nature: measured.length > 0 ? measured[0].quota.nature : 'console',
         currency: measured.length > 0 ? measured[0].quota.currency : null,
         todayCurrency: measured.length > 0 ? measured[0].quota.todayCurrency : null,
@@ -122,7 +122,16 @@ const server = http.createServer(async (req, res) => {
     const providers = buildProviders()
     return send(res, 200, { total: providers.length, providers })
   }
-  if (p === '/dsh-free-pool/quota') return send(res, 200, { at: Date.now(), providers: buildProviders() })
+  if (p === '/dsh-free-pool/quota') return send(res, 200, { at: Date.now(), probed: false, providers: buildProviders() })
+  if (p === '/dsh-free-pool/quota/probe') {
+    const body = JSON.parse(await readBody(req))
+    const want = Array.isArray(body.slugs) && body.slugs.length > 0 ? new Set(body.slugs) : null
+    const all = buildProviders()
+    const providers = all
+      .filter((x) => (want === null ? x.category !== 'custom' : want.has(x.slug)))
+      .map((x) => ({ ...x, quota: { ...x.quota, state: x.quota.state === 'untested' ? 'ok' : x.quota.state } }))
+    return send(res, 200, { at: Date.now(), probed: true, providers })
+  }
   if (p === '/dsh-free-pool/free-models') return send(res, 200, FREE)
   if (p === '/dsh-free-pool/models') {
     const body = JSON.parse(await readBody(req))
