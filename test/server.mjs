@@ -164,6 +164,22 @@ const server = http.createServer(async (req, res) => {
     const keys = (body.data && body.data.keys) || body.keys || []
     return send(res, 200, { ok: true, added: keys.length, skipped: 0, errors: [], total: entries.length + keys.length })
   }
+  if (p === '/dsh-free-pool/pool-models') {
+    res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8' })
+    const line = (o) => res.write(JSON.stringify(o) + '\n')
+    const groups = [
+      { slug: 'openrouter', name: 'OpenRouter', vendor: 'OpenRouter', category: 'llm', baseUrl: 'https://openrouter.ai/api/v1', freeKind: 'long-term', keyLabel: 'OpenRouter', models: ['deepseek/deepseek-v4.1-flash:free', 'xingchen-agi/xing4.0-29b-a4b:free'], error: null },
+      { slug: 'google', name: 'Google AI Studio', vendor: 'Google', category: 'llm', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', freeKind: 'long-term', keyLabel: 'Google', models: ['gemini-3.6-flash', 'gemini-3.6-pro'], error: null },
+      { slug: 'groq', name: 'Groq', vendor: 'Groq', category: 'llm', baseUrl: 'https://api.groq.com/openai/v1', freeKind: 'long-term', keyLabel: 'Groq 主号', models: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b'], error: null },
+      { slug: 'mistral', name: 'Mistral', vendor: 'Mistral', category: 'llm', baseUrl: 'https://api.mistral.ai/v1', freeKind: 'trial', keyLabel: 'Mistral', models: ['mistral-small-latest'], error: null },
+      { slug: 'cerebras', name: 'Cerebras', vendor: 'Cerebras', category: 'llm', baseUrl: 'https://api.cerebras.ai/v1', freeKind: 'daily', keyLabel: 'Cerebras', models: [], error: 'Cerebras 被 Cloudflare 拦截（浏览器挑战页），此网络环境无法直连' },
+    ]
+    line({ kind: 'init', at: Date.now(), groups: groups.slice(0, 2) })
+    for (const g of groups.slice(2)) line({ kind: 'group', group: g })
+    line({ kind: 'done', at: Date.now() })
+    res.end()
+    return
+  }
   if (p === '/dsh-free-pool/speed-test') {
     const body = JSON.parse(await readBody(req))
     const id = String(body.entryId || '')

@@ -33,13 +33,22 @@
 </head>
 <body>
   <div id="composer">
-    <span id="slot-left"></span>
+    <span id="slot-model"></span>
     <span class="fake-model">mimo-v2.6-flash-free ▾</span>
+    <span id="slot-left"></span>
   </div>
   <div id="slot-overlay"></div>
 
   <script src="/react.js"></script>
   <script src="/react-dom.js"></script>
+  <script>
+    window.onerror = function (msg, src, line, col, err) {
+      const box = document.createElement('pre')
+      box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#200;color:#f99;font:12px monospace;padding:16px;overflow:auto;white-space:pre-wrap'
+      box.textContent = 'RENDER ERROR: ' + msg + '\n' + (err && err.stack ? err.stack : '') + '\n' + src + ':' + line + ':' + col
+      document.body.appendChild(box)
+    }
+  </script>
   <script>
     // Minimal stand-ins for the two harness globals client.js touches.
     const React = window.React
@@ -64,7 +73,7 @@
     // A slots service with the same shape the plugin uses: inject() registers a factory,
     // and the harness renders whatever was registered into the matching element.
     function boot(plugin) {
-      const seats = { 'conversation.input.left': [], 'conversation.input.overlay': [] }
+      const seats = { 'conversation.input.left': [], 'conversation.input.overlay': [], 'conversation.input.model': [] }
       const ctx = {
         effect(fn) { fn() },
         slots: {
@@ -78,6 +87,10 @@
       const overlay = document.getElementById('slot-overlay')
       ReactDOM.createRoot(left).render(seats['conversation.input.left'][0].render({}))
       ReactDOM.createRoot(overlay).render(seats['conversation.input.overlay'][0].render({}))
+      const model = document.getElementById('slot-model')
+      if (model !== null && seats['conversation.input.model'].length > 0) {
+        ReactDOM.createRoot(model).render(seats['conversation.input.model'][0].render({}))
+      }
 
       // Auto-open so a screenshot shows the panel without a click.
       setTimeout(() => {
