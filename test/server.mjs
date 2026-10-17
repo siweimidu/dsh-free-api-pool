@@ -112,6 +112,17 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, { ok: true })
   }
   if (p === '/dsh-free-pool/vault/export') return send(res, 200, { schema: 'dsh-free-api-pool/vault-export/v1', exportedAt: new Date().toISOString(), count: 4, entries: KEYED.map((k) => ({ ...k, key: 'sk-real-key-value' })) })
+  if (p === '/dsh-free-pool/speed-test') {
+    const body = JSON.parse(await readBody(req))
+    const id = String(body.entryId || '')
+    if (id === 'k0') {
+      return send(res, 200, { ok: true, status: 200, model: 'openai/gpt-oss-120b', baseUrl: 'https://api.groq.com/openai/v1', ttftMs: 268, totalMs: 764, tokens: 18, tokensSource: 'usage', chars: 73, tps: 36.3, grade: 'excellent' })
+    }
+    if (id === 'k1') {
+      return send(res, 200, { ok: true, status: 200, model: 'xingchen-agi/xing4.0-29b-a4b:free', baseUrl: 'https://openrouter.ai/api/v1', ttftMs: 4101, totalMs: 4342, tokens: 64, tokensSource: 'usage', chars: 238, tps: 265.6, grade: 'slow' })
+    }
+    return send(res, 200, { ok: false, status: 429, model: 'google/gemma-4-31b-it:free', baseUrl: 'https://openrouter.ai/api/v1', error: 'Provider returned error', ttftMs: null, totalMs: 3324 })
+  }
   if (p === '/dsh-free-pool/checkin') return send(res, 200, { ok: true, message: '签到成功，获得 $5' })
   if (p === '/dsh-free-pool/checkin-all') return send(res, 200, { results: [{ slug: 'sharedchat', name: 'sharedchat', ok: true, message: '当前套餐仍在有效期内，到期后可以再次领取' }, { slug: 'hcnsec', name: '新疆幻城', ok: false, message: '该站登录需要 Cloudflare 人机验证，无法自动签到' }] })
   send(res, 404, { error: 'not found' })
