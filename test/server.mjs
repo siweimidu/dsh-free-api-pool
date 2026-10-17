@@ -4,7 +4,7 @@
  * fixture host that mirrors the real route payloads (including multi-key accounts).
  */
 import http from 'node:http'
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 
 const PLUGIN = 'C:/Users/35238/.dsh/profiles/desktop/dsh-free-api-pool'
 const REACT = 'C:/Users/35238/.dsh/profiles/node_modules/react/umd/react.development.js'
@@ -111,13 +111,19 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1')
   const p = url.pathname
   if (p === '/') {
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-    res.end(readFileSync(PLUGIN + '/test/harness.html'))
+    // Stamp the client script with its mtime: without this the browser keeps using a
+    // cached client.js and edits look like they did nothing.
+    const mtime = Math.round(statSync(PLUGIN + '/lib/client.js').mtimeMs)
+    const html = readFileSync(PLUGIN + '/test/harness.html', 'utf8')
+      .replace(/src="\/client\.js[^"]*"/, 'src="/client.js?v=' + mtime + '"')
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
+    res.end(html)
     return
   }
   if (p === '/react.js') { res.writeHead(200, { 'content-type': 'text/javascript' }); res.end(readFileSync(REACT)); return }
   if (p === '/react-dom.js') { res.writeHead(200, { 'content-type': 'text/javascript' }); res.end(readFileSync(REACT_DOM)); return }
-  if (p === '/client.js') { res.writeHead(200, { 'content-type': 'text/javascript' }); res.end(readFileSync(PLUGIN + '/lib/client.js')); return }
+  if (p === '/scroll.html') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' }); res.end(readFileSync(PLUGIN + '/test/scroll.html')); return }
+  if (p === '/client.js') { res.writeHead(200, { 'content-type': 'text/javascript', 'cache-control': 'no-store' }); res.end(readFileSync(PLUGIN + '/lib/client.js')); return }
   if (p === '/dsh-free-pool/providers') {
     const providers = buildProviders()
     return send(res, 200, { total: providers.length, providers })

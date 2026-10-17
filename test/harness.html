@@ -29,13 +29,30 @@
   html.dark #composer { background: #161a20; border-color: #333942; }
   #composer .fake-model { font-size: 12px; color: #5b6470; border: 1px solid #e7eaef; border-radius: 12px; padding: 4px 10px; }
   html.dark #composer .fake-model { color: #a8b3c2; border-color: #333942; }
+  #dock-row { position: fixed; left: 24px; bottom: 68px; z-index: 26; display: flex; justify-content: center; align-items: center; gap: 12px; }
+  .fake-controls { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .fake-reasoning { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .fake-reasoning-label, .fake-reasoning-value { font-size: 12px; color: #5b6470; }
+  html.dark .fake-reasoning-label, html.dark .fake-reasoning-value { color: #a8b3c2; }
+  .fake-slider { width: 120px; accent-color: #0065fd; }
 </style>
 </head>
 <body>
+  <!-- Host's composer.dock row: the plugin's picker lives here, on its own row. -->
+  <div id="dock-row">
+    <span id="slot-dock"></span>
+  </div>
+  <!-- Host's .standardControls row: model selector + reasoning slider must stay intact. -->
   <div id="composer">
-    <span id="slot-model"></span>
-    <span class="fake-model">mimo-v2.6-flash-free ▾</span>
     <span id="slot-left"></span>
+    <div class="fake-controls">
+      <button class="fake-model">Deepseek-V4.1-Flash · x0.11 <span class="fake-caret">▾</span></button>
+      <div class="fake-reasoning">
+        <span class="fake-reasoning-label">推理等级</span>
+        <input type="range" class="fake-slider" min="0" max="3" value="2" />
+        <span class="fake-reasoning-value">High</span>
+      </div>
+    </div>
   </div>
   <div id="slot-overlay"></div>
 
@@ -73,7 +90,7 @@
     // A slots service with the same shape the plugin uses: inject() registers a factory,
     // and the harness renders whatever was registered into the matching element.
     function boot(plugin) {
-      const seats = { 'conversation.input.left': [], 'conversation.input.overlay': [], 'conversation.input.model': [] }
+      const seats = { 'conversation.input.left': [], 'conversation.input.overlay': [], 'conversation.composer.dock': [] }
       const ctx = {
         effect(fn) { fn() },
         slots: {
@@ -87,9 +104,9 @@
       const overlay = document.getElementById('slot-overlay')
       ReactDOM.createRoot(left).render(seats['conversation.input.left'][0].render({}))
       ReactDOM.createRoot(overlay).render(seats['conversation.input.overlay'][0].render({}))
-      const model = document.getElementById('slot-model')
-      if (model !== null && seats['conversation.input.model'].length > 0) {
-        ReactDOM.createRoot(model).render(seats['conversation.input.model'][0].render({}))
+      const dock = document.getElementById('slot-dock')
+      if (dock !== null && seats['conversation.composer.dock'].length > 0) {
+        ReactDOM.createRoot(dock).render(seats['conversation.composer.dock'][0].render({}))
       }
 
       // Auto-open so a screenshot shows the panel without a click.
@@ -141,6 +158,6 @@
       }
     }
   </script>
-  <script src="/client.js"></script>
+  <script src="/client.js?bust=v15"></script>
 </body>
 </html>
