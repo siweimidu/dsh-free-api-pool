@@ -1,0 +1,23 @@
+feat: 平台选择器重做，修复申请/文档链接打不开
+
+选择平台 UI:
+- 原来是原生 <select>，渲染成系统控件，无法跟随宿主主题，
+  暗色下就是一块突兀的浅灰下拉，毫无质感
+- 换成自定义组件 PlatformPicker：按钮式触发器（34px 高、radius-md、
+  宿主边框色）+ 搜索式弹层，与白嫖池选择器同一套视觉语言
+- 选中项带长期免费/每日刷新标签，列表项含平台名 + 标签 + 勾选态
+- 弹层固定定位、视口内翻转、外点关闭、Esc 关闭
+
+链接打不开（真 bug，两层原因）:
+- window.open 在 Electron 渲染进程常被静默拦截，所以点了没反应
+  改为真实 <a target=_blank> 点击走宿主链接处理，window.open 仅作兜底
+- 部分 URL 本身失效，已逐个实测并修正：
+    sensenova docs  platform.sensenova.cn/doc -> platform.sensenova.cn/
+    llm7      docs  api.llm7.io/ -> llm7.io/
+    navy      apply api.navy/ (403) -> navy.ai/
+    aion      apply/docs -> aionlabs.ai/
+    requesty  docs -> docs.requesty.ai/
+
+排查说明: 另有 12 个链接在此网络下超时或 403，加浏览器 UA 后
+多数返回 200（如硅基流动/Cohere/Ollama/Requesty），属于网络可达性，
+不是数据错误，未改动。
