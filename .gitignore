@@ -12,3 +12,4 @@ node_modules/
 test/.scratch-vault.json
 data/vault.json.polluted-backup
 data/usage.jsonl
+data/pool-cache.json

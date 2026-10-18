@@ -7,6 +7,7 @@
   /* Stand-in for the harness shell: just enough theme tokens for the panel to sit on. */
   :root {
     /* host menu material (from app.asar: --dsw-specific-menu / --dsw-menu-backdrop-filter) */
+    --dsw-menu-surface-fill: rgba(248, 249, 250, .58);
     --dsw-specific-menu: rgba(248, 249, 250, .94);
     --dsw-menu-backdrop-filter: blur(40px) saturate(150%);
     --dsw-radius-sm: 8px;
@@ -22,6 +23,7 @@
   }
   /* ?theme=dark swaps the same tokens, which is exactly what the real app does. */
   html.dark {
+    --dsw-menu-surface-fill: rgba(67, 69, 74, .45);
     --dsw-specific-menu: rgba(48, 49, 54, .94);
     --dsw-alias-bg-layer-1: #0e1115;
     --dsw-alias-bg-layer-2: #161a20;
