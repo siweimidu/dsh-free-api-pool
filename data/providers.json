@@ -344,7 +344,7 @@
   },
   {
    "slug": "agnes",
-   "name": "Agnes AI",
+   "name": "Agnes AI 国际版",
    "vendor": "Agnes",
    "category": "llm",
    "baseUrl": "https://apihub.agnes-ai.com/v1",
@@ -353,6 +353,20 @@
    "homepage": "https://agnes-ai.com",
    "freeKind": "long-term",
    "freeNote": "全模态模型永久免费（官网 Free Omni-Modal AI API），额度以站内为准",
+   "probe": "models",
+   "keyHint": "sk- 开头"
+  },
+  {
+   "slug": "agnes-cn",
+   "name": "Agnes AI 国内版",
+   "vendor": "Agnes",
+   "category": "llm",
+   "baseUrl": "https://api.agnes-ai.cn/v1",
+   "applyUrl": "https://agnes-ai.cn/",
+   "docsUrl": "https://agnes-ai.cn/",
+   "homepage": "https://agnes-ai.cn",
+   "freeKind": "long-term",
+   "freeNote": "国内站，全模态模型永久免费，额度以站内为准",
    "probe": "models",
    "keyHint": "sk- 开头"
   },

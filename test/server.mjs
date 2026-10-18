@@ -64,6 +64,9 @@ function buildProviders() {
       keyCount: mine.length,
       keys: mine,
       accounts,
+      // Mirrors the host: the registered provider name and the models DSH accepts.
+      hostProvider: p.slug + '-free',
+      hostModels: null,
       hasCredential: ['agentrouter', 'hcnsec', 'sharedchat'].includes(p.slug),
       quota: {
         state: measured.length > 0 ? 'ok' : (mine.length > 0 ? 'untested' : (p.probe === 'static' ? 'console' : 'nokey')),
@@ -210,7 +213,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8' })
     const line = (o) => res.write(JSON.stringify(o) + '\n')
     const groups = [
-      { slug: 'openrouter', name: 'OpenRouter', vendor: 'OpenRouter', category: 'llm', baseUrl: 'https://openrouter.ai/api/v1', freeKind: 'long-term', keyLabel: 'OpenRouter', models: ['deepseek/deepseek-v4.1-flash:free', 'xingchen-agi/xing4.0-29b-a4b:free'], error: null },
+      { slug: 'openrouter', hostProvider: 'openrouter-free', hostModels: null, name: 'OpenRouter', vendor: 'OpenRouter', category: 'llm', baseUrl: 'https://openrouter.ai/api/v1', freeKind: 'long-term', keyLabel: 'OpenRouter', models: ['deepseek/deepseek-v4.1-flash:free', 'xingchen-agi/xing4.0-29b-a4b:free'], error: null },
       { slug: 'google', name: 'Google AI Studio', vendor: 'Google', category: 'llm', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', freeKind: 'long-term', keyLabel: 'Google', models: ['gemini-3.6-flash', 'gemini-3.6-pro'], error: null },
       { slug: 'groq', name: 'Groq', vendor: 'Groq', category: 'llm', baseUrl: 'https://api.groq.com/openai/v1', freeKind: 'long-term', keyLabel: 'Groq 主号', models: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b'], error: null },
       { slug: 'mistral', name: 'Mistral', vendor: 'Mistral', category: 'llm', baseUrl: 'https://api.mistral.ai/v1', freeKind: 'trial', keyLabel: 'Mistral', models: ['mistral-small-latest'], error: null },
