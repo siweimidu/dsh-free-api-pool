@@ -46,8 +46,10 @@
   <div id="composer">
     <span id="slot-left"></span>
     <div class="fake-controls">
-      <span id="slot-model"></span>
+      <!-- host's own model control (input.model, kind:single) -->
       <button class="fake-model">Deepseek-V4.1-Flash · x0.11 <span class="fake-caret">▾</span></button>
+      <!-- input.right is a list slot, rendered before input.model -->
+      <span id="slot-right"></span>
       <div class="fake-reasoning">
         <span class="fake-reasoning-label">推理等级</span>
         <input type="range" class="fake-slider" min="0" max="3" value="2" />
@@ -91,7 +93,8 @@
     // A slots service with the same shape the plugin uses: inject() registers a factory,
     // and the harness renders whatever was registered into the matching element.
     function boot(plugin) {
-      const seats = { 'conversation.input.left': [], 'conversation.input.overlay': [], 'conversation.input.model': [] }
+      // Mirrors the host: input.right is a list, input.model is single (host-owned).
+      const seats = { 'conversation.input.left': [], 'conversation.input.overlay': [], 'conversation.input.right': [] }
       const ctx = {
         effect(fn) { fn() },
         slots: {
@@ -105,9 +108,16 @@
       const overlay = document.getElementById('slot-overlay')
       ReactDOM.createRoot(left).render(seats['conversation.input.left'][0].render({}))
       ReactDOM.createRoot(overlay).render(seats['conversation.input.overlay'][0].render({}))
-      const model = document.getElementById('slot-model')
-      if (model !== null && seats['conversation.input.model'].length > 0) {
-        ReactDOM.createRoot(model).render(seats['conversation.input.model'][0].render({}))
+      const right = document.getElementById('slot-right')
+      if (right !== null && seats['conversation.input.right'].length > 0) {
+        // A list slot renders every registration, in order.
+        seats['conversation.input.right']
+          .sort((a, b) => (a.spec.order || 0) - (b.spec.order || 0))
+          .forEach((entry) => {
+            const host = document.createElement('span')
+            right.appendChild(host)
+            ReactDOM.createRoot(host).render(entry.render({}))
+          })
       }
 
       // Auto-open so a screenshot shows the panel without a click.
