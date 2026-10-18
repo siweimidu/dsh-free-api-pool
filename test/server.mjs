@@ -183,6 +183,9 @@ const server = http.createServer(async (req, res) => {
     if (String(body.key || '').length < 8) return send(res, 400, { error: 'Key 被拒绝（HTTP 401），请确认 Key 有效且已启用该接口' })
     return send(res, 200, { baseUrl: body.baseUrl, count: 3, models: ['gpt-oss-120b', 'qwen/qwen3.8-27b', 'llama-4-scout'] })
   }
+  if (p === '/dsh-free-pool/gateway') {
+    return send(res, 200, { port: 47113, baseUrl: 'http://127.0.0.1:47113/dsh-free-pool/v1', state: 'listening', multipleInstances: (process.env.DFP_SIMULATE_MULTI === '1') })
+  }
   if (p === '/dsh-free-pool/register-all') {
     return send(res, 200, { ok: true, total: 7, registered: 6, results: [
       { slug: 'groq', ok: true, providerId: 'dfp-groq', models: 2 },
