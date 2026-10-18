@@ -134,6 +134,14 @@ const server = http.createServer(async (req, res) => {
       picked: { provider: 'openrouter', model: 'deepseek/deepseek-v4.1-flash-1017', baseUrl: 'https://openrouter.ai/api/v1' },
       reason: 'OpenRouter · deepseek/deepseek-v4.1-flash-1017',
       tried: [],
+      health: {
+        cooling: [{ provider: 'openrouter', model: 'mistralai/mistral-large-4-0', secondsLeft: 12, strikes: 2, reason: 'HTTP 402' }],
+        budgets: [
+          { provider: 'groq', used: 34000, cap: 200000, over: false },
+          { provider: 'cerebras', used: 980000, cap: 1000000, over: false },
+          { provider: 'openrouter', used: 200000, cap: 200000, over: true },
+        ],
+      },
       profiles: ['auto', 'auto-fast', 'auto-cheap', 'auto-code', 'auto-write'].map((id) => ({ id, name: id, hint: '' })),
     })
   }
