@@ -95,12 +95,32 @@
     function boot(plugin) {
       // Mirrors the host: input.right is a list, input.model is single (host-owned).
       const seats = { 'conversation.input.left': [], 'conversation.input.overlay': [], 'conversation.input.right': [] }
+      // Stand-in for the host's ctx.modelDirectories: records the switch so the harness can
+      // prove the picker performs a real selection instead of only remembering it.
+      window.__switches = []
+      const modelDirectories = {
+        directoryFor(sessionId) {
+          return {
+            select(sel) {
+              window.__switches.push({ sessionId, ...sel })
+              return Promise.resolve({ ok: true })
+            },
+          }
+        },
+      }
+
       const ctx = {
+        modelDirectories,
         effect(fn) { fn() },
         slots: {
           inject(name, factory) { factory() },
           register(spec, render) { seats[spec.name].push({ spec, render }); return () => {} },
         },
+      }
+      // The host loader only applies a plugin once every declared inject service exists.
+      const missing = (plugin.inject || []).filter((name) => ctx[name] === undefined)
+      if (missing.length > 0) {
+        throw new Error('plugin needs services the harness does not provide: ' + missing.join(', '))
       }
       plugin.apply(ctx)
 
@@ -116,7 +136,8 @@
           .forEach((entry) => {
             const host = document.createElement('span')
             right.appendChild(host)
-            ReactDOM.createRoot(host).render(entry.render({}))
+            // Session-scoped slots receive sessionId as a standard prop.
+            ReactDOM.createRoot(host).render(entry.render({ sessionId: 'harness-session' }))
           })
       }
 
