@@ -1,0 +1,17 @@
+fix: 弹层改用宿主菜单材质，右下角对齐白嫖池按钮
+
+颜色不对（发灰发亮）:
+- 我原来用 --dsw-alias-bg-overlay 当弹层背景，那是页面级表面色，
+  不是菜单材质，所以暗色下渲染成一块偏亮的灰板
+- 宿主菜单真实做法（app.asar 里 MenuSurface）是：
+    background: var(--dsw-specific-menu)     暗色 #303136f0 / 浅色 #f8f9faf0
+    backdrop-filter: var(--dsw-menu-backdrop-filter)  blur(40px) saturate(150%)
+  已照搬，两个主题都与宿主一致
+- 分组吸顶标题原来各自铺了一层不透明底色，改成 transparent 让材质透出来
+
+对齐方式:
+- 原来是 left 对齐按钮左边缘，所以看着偏左
+- 改为 right 对齐：以按钮右边缘为基准向左展开，并 clamp 到视口内
+
+测试台补上宿主真实 token（--dsw-specific-menu / --dsw-menu-backdrop-filter /
+--dsw-radius-lg / --dsw-elevation-prominent），否则无法验证真实观感。
