@@ -351,8 +351,8 @@
    "applyUrl": "https://apihub.agnes-ai.com/",
    "docsUrl": "https://apihub.agnes-ai.com/",
    "homepage": "https://agnes-ai.com",
-   "freeKind": "unknown",
-   "freeNote": "第三方聚合，额度以站内为准",
+   "freeKind": "long-term",
+   "freeNote": "全模态模型永久免费（官网 Free Omni-Modal AI API），额度以站内为准",
    "probe": "models",
    "keyHint": "sk- 开头"
   },

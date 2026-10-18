@@ -137,6 +137,25 @@ const server = http.createServer(async (req, res) => {
       profiles: ['auto', 'auto-fast', 'auto-cheap', 'auto-code', 'auto-write'].map((id) => ({ id, name: id, hint: '' })),
     })
   }
+  if (p === '/dsh-free-pool/usage') {
+    const scope = url.searchParams.get('scope') === 'all' ? 'all' : 'today'
+    const mul = scope === 'all' ? 180 : 1
+    return send(res, 200, { at: Date.now(), summary: {
+      scope, requests: 71 * mul, ok: 71 * mul, failed: 0, successRate: 100,
+      promptTokens: 477522 * mul, completionTokens: 30158 * mul, reasoningTokens: 1442 * mul,
+      totalTokens: 507680 * mul, cachedTokens: 29487104, cacheHitRate: 98,
+      avgTps: 408.1, avgTtftMs: 7540,
+    } })
+  }
+  if (p === '/dsh-free-pool/usage/log') {
+    const limit = Number(url.searchParams.get('limit') || 20)
+    const rows = Array.from({ length: Math.min(limit, 71) }, (_, i) => ({
+      at: Date.now() - i * 11000, kind: 'speed-test', channel: '测速',
+      provider: 'groq', providerName: 'Groq', model: 'openai/gpt-oss-120b', account: 'Groq 主号',
+      ok: true, status: 200, totalMs: 10970, ttftMs: 6140, tps: 139.0,
+    }))
+    return send(res, 200, { at: Date.now(), total: 71, rows })
+  }
   if (p === '/dsh-free-pool/quota') return send(res, 200, { at: Date.now(), probed: false, providers: buildProviders() })
   if (p === '/dsh-free-pool/quota/probe') {
     const body = JSON.parse(await readBody(req))
