@@ -142,7 +142,7 @@
    "docsUrl": "https://open.bigmodel.cn/dev/api",
    "homepage": "https://open.bigmodel.cn",
    "freeKind": "long-term",
-   "freeNote": "GLM-4.x-Flash 系列永久免费",
+   "freeNote": "GLM Flash 系列（glm-5.3-flash / flashx 等）永久免费，付费型号已自动隐藏",
    "probe": "models",
    "keyHint": "id.secret 形式"
   },
