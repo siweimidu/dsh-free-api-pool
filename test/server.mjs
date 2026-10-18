@@ -183,12 +183,19 @@ const server = http.createServer(async (req, res) => {
     if (String(body.key || '').length < 8) return send(res, 400, { error: 'Key 被拒绝（HTTP 401），请确认 Key 有效且已启用该接口' })
     return send(res, 200, { baseUrl: body.baseUrl, count: 3, models: ['gpt-oss-120b', 'qwen/qwen3.8-27b', 'llama-4-scout'] })
   }
+  if (p === '/dsh-free-pool/register-all') {
+    return send(res, 200, { ok: true, total: 7, registered: 6, results: [
+      { slug: 'groq', ok: true, providerId: 'dfp-groq', models: 2 },
+      { slug: 'zhipu', ok: true, providerId: 'dfp-zhipu', models: 2 },
+      { slug: 'cerebras', ok: false, reason: '网络不通：api.cerebras.ai 无响应' },
+    ] })
+  }
   if (p === '/dsh-free-pool/vault/add') {
     const body = JSON.parse(await readBody(req))
     const slug = body.slug || 'custom'
     const id = 'n-' + Math.random().toString(36).slice(2, 8)
     entries.push({ id, slug, label: body.label || slug, masked: 'sk-new…0000', baseUrl: body.baseUrl })
-    return send(res, 200, { ok: true, id, masked: 'sk-new…0000' })
+    return send(res, 200, { ok: true, id, masked: 'sk-new…0000', registered: { ok: true, providerId: 'dfp-' + slug, models: 2 } })
   }
   if (p === '/dsh-free-pool/vault/remove') {
     const body = JSON.parse(await readBody(req))
