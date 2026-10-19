@@ -108,12 +108,22 @@
       // Stand-in for the host's ctx.modelDirectories: records the switch so the harness can
       // prove the picker performs a real selection instead of only remembering it.
       window.__switches = []
+      // A minimal subscribable store, mirroring the host's directory.store.
+      window.__selection = { provider: 'workbuddy', model: 'deepseek-v4.1-flash' }
+      const storeListeners = new Set()
       const modelDirectories = {
         directoryFor(sessionId) {
           return {
             select(sel) {
               window.__switches.push({ sessionId, ...sel })
+              // Mirror the host: a successful select updates the store, which the UI watches.
+              window.__selection = { provider: sel.provider, model: sel.model }
+              storeListeners.forEach((fn) => fn())
               return Promise.resolve({ ok: true })
+            },
+            store: {
+              getSnapshot: () => ({ current: window.__selection }),
+              subscribe: (fn) => { storeListeners.add(fn); return () => storeListeners.delete(fn) },
             },
           }
         },
