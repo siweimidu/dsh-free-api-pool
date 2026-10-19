@@ -13,3 +13,6 @@ test/.scratch-vault.json
 data/vault.json.polluted-backup
 data/usage.jsonl
 data/pool-cache.json
+*.bak-*
+lib/index.js.bak-**.dfp-backup
+*.dfp-tmp
