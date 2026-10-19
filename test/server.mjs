@@ -183,6 +183,27 @@ const server = http.createServer(async (req, res) => {
     if (String(body.key || '').length < 8) return send(res, 400, { error: 'Key 被拒绝（HTTP 401），请确认 Key 有效且已启用该接口' })
     return send(res, 200, { baseUrl: body.baseUrl, count: 3, models: ['gpt-oss-120b', 'qwen/qwen3.8-27b', 'llama-4-scout'] })
   }
+  if (p === '/dsh-free-pool/self-check') {
+    return send(res, 200, {
+      ok: true,
+      gateway: { ok: true, current: 'http://127.0.0.1:47113/dsh-free-pool/v1', expected: 'http://127.0.0.1:47113/dsh-free-pool/v1', reason: '' },
+      platforms: 6, usable: 4, unusable: 2,
+      rows: [
+        { slug: 'groq', name: 'Groq', keys: 3, providerId: 'dfp-groq', registered: true, models: 4, verdict: '可切换' },
+        { slug: 'openrouter', name: 'OpenRouter', keys: 2, providerId: 'dfp-openrouter', registered: true, models: 16, verdict: '可切换' },
+        { slug: 'cloudflare', name: 'Cloudflare Workers AI', keys: 1, providerId: 'dfp-cloudflare', registered: false, models: 0, verdict: '未注册，无法切换' },
+        { slug: 'cohere', name: 'Cohere', keys: 1, providerId: 'dfp-cohere', registered: false, models: 0, verdict: '未注册，无法切换' },
+        { slug: 'agnes', name: 'Agnes AI 国际版', keys: 1, providerId: 'dfp-agnes', registered: true, models: 5, verdict: '可切换' },
+        { slug: 'cerebras', name: 'Cerebras', keys: 1, providerId: 'dfp-cerebras', registered: true, models: 2, verdict: '可切换' },
+      ],
+    })
+  }
+  if (p === '/dsh-free-pool/snippet') {
+    const u = new URL(req.url, 'http://x')
+    const slug = u.searchParams.get('slug')
+    return send(res, 200, { ok: true, providerId: 'dfp-' + slug, modelCount: 4, alreadyRegistered: true, note: '已注册，可覆盖更新',
+      snippet: 'dfp-' + slug + ':\n  displayName: ' + slug + '（免费池）\n  apiKeyEnv: DFP_POOL_KEY\n  api: openai-completions\n  baseURL: https://api.' + slug + '.com/v1\n  models:\n    - id: model-a\n      name: model-a' })
+  }
   if (p === '/dsh-free-pool/gateway') {
     return send(res, 200, { port: 47113, baseUrl: 'http://127.0.0.1:47113/dsh-free-pool/v1', state: 'listening', multipleInstances: (process.env.DFP_SIMULATE_MULTI === '1') })
   }
