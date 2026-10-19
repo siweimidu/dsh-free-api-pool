@@ -183,6 +183,9 @@ const server = http.createServer(async (req, res) => {
     if (String(body.key || '').length < 8) return send(res, 400, { error: 'Key 被拒绝（HTTP 401），请确认 Key 有效且已启用该接口' })
     return send(res, 200, { baseUrl: body.baseUrl, count: 3, models: ['gpt-oss-120b', 'qwen/qwen3.8-27b', 'llama-4-scout'] })
   }
+  if (p === '/dsh-free-pool/reload') {
+    return send(res, 200, { ok: true, reason: '', reloads: 1 })
+  }
   if (p === '/dsh-free-pool/self-check') {
     return send(res, 200, {
       ok: true,
