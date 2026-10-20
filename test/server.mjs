@@ -177,11 +177,17 @@ const server = http.createServer(async (req, res) => {
       .map((x) => ({ ...x, quota: { ...x.quota, state: x.quota.state === 'untested' ? 'ok' : x.quota.state } }))
     return send(res, 200, { at: Date.now(), probed: true, providers })
   }
-  if (p === '/dsh-free-pool/free-models') return send(res, 200, FREE)
-  if (p === '/dsh-free-pool/models') {
-    const body = JSON.parse(await readBody(req))
-    if (String(body.key || '').length < 8) return send(res, 400, { error: 'Key 被拒绝（HTTP 401），请确认 Key 有效且已启用该接口' })
-    return send(res, 200, { baseUrl: body.baseUrl, count: 3, models: ['gpt-oss-120b', 'qwen/qwen3.8-27b', 'llama-4-scout'] })
+  if (p === '/dsh-free-pool/free-models') {
+    return send(res, 200, { at: Date.now(), groups: [
+      { slug: 'openrouter', name: 'OpenRouter', ok: true, total: 470, models: ['minimax/minimax-m3.1-flash:free', 'liquid/lfm-2.5-2.6b:free', 'google/gemma-4-31b-it:free'] },
+      { slug: 'groq', name: 'Groq', ok: true, total: 11, models: ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b'] },
+      { slug: 'agnes', name: 'Agnes AI 国际版', ok: true, total: 10, models: ['agnes-3.0-flash', 'agnes-2.5-flash'] },
+      { slug: 'mistral', name: 'Mistral', ok: true, total: 45, models: ['ministral-14b-2512', 'mistral-small-latest'] },
+      { slug: 'zhipu', name: '智谱 GLM', ok: true, total: 11, models: ['glm-5.3-flash', 'glm-5.3-flashx'] },
+      { slug: 'amd', name: 'AMD Radeon', ok: true, total: 16, models: ['GLM-5.3-Flash', 'DeepSeek-V4.1-Flash'] },
+      { slug: 'google', name: 'Google AI Studio', ok: false, error: '地址不对：generativelanguage.googleapis.com 返回 404', total: 0, models: [] },
+      { slug: 'cohere', name: 'Cohere', ok: true, total: 12, models: [] },
+    ] })
   }
   if (p === '/dsh-free-pool/reload') {
     return send(res, 200, { ok: true, reason: '', reloads: 1 })
