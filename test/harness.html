@@ -96,7 +96,14 @@
           throw new Error('unknown module: ' + name)
         })
         modules[def.id] = mod
-        boot(mod)
+        try {
+          boot(mod)
+        } catch (err) {
+          const box = document.createElement('pre')
+          box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#200;color:#f99;font:12px monospace;padding:16px;overflow:auto;white-space:pre-wrap'
+          box.textContent = 'BOOT ERROR: ' + (err && err.message ? err.message : String(err)) + '\n' + (err && err.stack ? err.stack : '')
+          document.body.appendChild(box)
+        }
       },
     }
 
@@ -131,10 +138,22 @@
 
       const ctx = {
         modelDirectories,
+        // DSH calls the factory immediately with the host context; the harness must too,
+        // otherwise every slot registration throws "ctx.inject is not a function".
+        inject(names, fn) {
+          if (typeof fn === 'function') return fn(ctx)
+          return ctx
+        },
         effect(fn) { fn() },
         slots: {
           inject(name, factory) { factory() },
-          register(spec, render) { seats[spec.name].push({ spec, render }); return () => {} },
+          register(spec, render) {
+            if (seats[spec.name] === undefined) {
+              throw new Error('slot not provided by harness: ' + spec.name)
+            }
+            seats[spec.name].push({ spec, render })
+            return () => {}
+          },
         },
       }
       // The host loader only applies a plugin once every declared inject service exists.
@@ -210,6 +229,6 @@
       }
     }
   </script>
-  <script src="/client.js?bust=v15"></script>
+  <script src="/client.js"></script>
 </body>
 </html>
