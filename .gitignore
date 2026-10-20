@@ -15,4 +15,4 @@ data/usage.jsonl
 data/pool-cache.json
 *.bak-*
 lib/index.js.bak-**.dfp-backup
-*.dfp-tmp
+*.dfp-tmpdata/free-models.json
