@@ -216,6 +216,9 @@ const server = http.createServer(async (req, res) => {
   if (p === '/dsh-free-pool/gateway') {
     return send(res, 200, { port: 47113, baseUrl: 'http://127.0.0.1:47113/dsh-free-pool/v1', state: 'listening', multipleInstances: (process.env.DFP_SIMULATE_MULTI === '1') })
   }
+  if (p === '/dsh-free-pool/register-status') {
+    return send(res, 200, { running: false, startedAt: Date.now() - 5000, finishedAt: Date.now(), total: 133, done: 133, ok: 88, failed: 45, lastError: '' })
+  }
   if (p === '/dsh-free-pool/register-all') {
     return send(res, 200, { ok: true, total: 7, registered: 6, results: [
       { slug: 'groq', ok: true, providerId: 'dfp-groq', models: 2 },
